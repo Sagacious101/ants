@@ -1,6 +1,6 @@
 import os
 import keyboard
-from random import randint
+from random import randint, sample
 
 """
 Необходимо реализовать игру «Ловкий муравьед».
@@ -39,7 +39,7 @@ DOWN = 'down'
 RIGHT = 'right'
 LEFT = 'left'
 ANTHILLS_MAX = 4
-ANTHILLS_MIN = 1
+ANTHILLS_MIN = 4
 
 
 class GameObject:
@@ -90,8 +90,6 @@ class Field:
         event = keyboard.read_event()
         old_x = self.player.x
         old_y = self.player.y
-        new_x = self.player.x
-        new_y = self.player.y
         dy = 0
         dx = 0
         if event.event_type == keyboard.KEY_DOWN:
@@ -103,37 +101,42 @@ class Field:
                 dy -= 1
             elif event.name == DOWN and self.player.y < self.rows - 1:
                 dy += 1
-            for anthill in self.anthills:
-                if self.player.y + dy == anthill.y and self.player.x + dx == anthill.x:
-                    dy = 0
-                    dx = 0
-            self.player.y += dy
-            self.player.x += dx
-            self.cells[old_y][old_x].content = None
-
+            if not self.cells[self.player.y + dy][self.player.x + dx].content:
+                self.player.y += dy
+                self.player.x += dx
+                self.cells[old_y][old_x].content = None
 
     def make_anthills(self) -> list:
-        self.anthills = []
-        while len(self.anthills) < 4:
-            anthill = Аnthill(randint(0, (ROWS - 1)), randint(0, (COLUMNS - 1)))
-            if anthill.y != self.player.y and anthill.x != self.player.x:
-                self.cells[anthill.y][anthill.x].content = anthill
-                self.anthills.append(anthill)
-
+        empty_cells = self.get_empty_cells()
+        anthills_amount = randint(ANTHILLS_MIN, ANTHILLS_MAX)
+        anthills_cells = sample(empty_cells, anthills_amount)
+        anthills = []
+        for cell in anthills_cells:
+            anthill = Аnthill(cell.y, cell.x)
+            cell.content = anthill
+            anthills.append(anthill)
+        return anthills
 
     def generate_field(self) -> None:
         self.cells = [
             [FieldCell(x, y) for x in range(self.columns)] for y in range(self.rows)
         ]
         self.cells[self.player.y][self.player.x].content = self.player
-        self.make_anthills()
+
+    def get_empty_cells(self):
+        empty_cells = []
+        for y in range(len(self.cells)):
+            for x in range(len(self.cells[y])):
+                if not self.cells[y][x].content:
+                    empty_cells.append(self.cells[y][x])
+        return empty_cells
 
     def draw_field(self) -> None:
         for row in self.cells:
             for cell in row:
                 cell.draw()
             print('')
-    
+
     def update(self):
         self.cells[self.player.y][self.player.x].content = self.player
 
@@ -147,6 +150,7 @@ class Game:
 
     def run(self) -> None:
         self.field.generate_field()
+        self.field.make_anthills()
         while self.is_running:
             self.field.draw_field()
             self.field.move_player()
