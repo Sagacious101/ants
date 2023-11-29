@@ -85,47 +85,41 @@ class Field:
         self.rows = rows
         self.player = player
         self.cells = []
-        self.xy_object_list = []
 
     def move_player(self) -> None:
         event = keyboard.read_event()
         old_x = self.player.x
         old_y = self.player.y
-        if event.event_type == keyboard.KEY_DOWN:
-            if event.name == RIGHT and self.player.x < self.columns - 1:
-                self.player.x += 1
-            elif event.name == LEFT and self.player.x > 0:
-                self.player.x -= 1
-            elif event.name == UP and self.player.y > 0:
-                self.player.y -= 1
-            elif event.name == DOWN and self.player.y < self.rows - 1:
-                self.player.y += 1
-    """
+        new_x = self.player.x
+        new_y = self.player.y
         dy = 0
         dx = 0
         if event.event_type == keyboard.KEY_DOWN:
-            if event.name == RIGHT:
+            if event.name == RIGHT and self.player.x < self.columns - 1:
                 dx += 1
-            elif event.name == LEFT:
+            elif event.name == LEFT and self.player.x > 0:
                 dx -= 1
-            elif event.name == UP:
+            elif event.name == UP and self.player.y > 0:
                 dy -= 1
-            elif event.name == DOWN:
+            elif event.name == DOWN and self.player.y < self.rows - 1:
                 dy += 1
-    """
+            for anthill in self.anthills:
+                if self.player.y + dy == anthill.y and self.player.x + dx == anthill.x:
+                    dy = 0
+                    dx = 0
+            self.player.y += dy
+            self.player.x += dx
+            self.cells[old_y][old_x].content = None
 
 
     def make_anthills(self) -> list:
-        count = 0
-        while count < 4:
-            anthill = Аnthill(randint(0, ROWS), randint(0, COLUMNS))
-            if anthill.x == self.player.x:
-                count += 0
-            elif anthill.y == self.player.y:
-                count += 0
-            else:
-                count += 1
+        self.anthills = []
+        while len(self.anthills) < 4:
+            anthill = Аnthill(randint(0, (ROWS - 1)), randint(0, (COLUMNS - 1)))
+            if anthill.y != self.player.y and anthill.x != self.player.x:
                 self.cells[anthill.y][anthill.x].content = anthill
+                self.anthills.append(anthill)
+
 
     def generate_field(self) -> None:
         self.cells = [
@@ -139,6 +133,9 @@ class Field:
             for cell in row:
                 cell.draw()
             print('')
+    
+    def update(self):
+        self.cells[self.player.y][self.player.x].content = self.player
 
 
 class Game:
@@ -153,7 +150,7 @@ class Game:
         while self.is_running:
             self.field.draw_field()
             self.field.move_player()
-            print(self.field.xy_object_list)
+            self.field.update()
             if os.name == 'nt':
                 os.system('cls')
             else:
